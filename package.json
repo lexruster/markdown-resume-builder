@@ -1,0 +1,19 @@
+{
+  "name": "mdcv",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "ts-node scripts/build.ts",
+    "clean": "node -e \"import('fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "handlebars": "^4.7.8"
+  }
+}

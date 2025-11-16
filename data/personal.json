@@ -1,0 +1,14 @@
+{
+  "fullName": "Bruce Wayne",
+  "websiteUrl": "https://example.com/",
+  "githubUrl": "https://github.com/example",
+  "githubHandle": "example",
+  "phoneDisplay": "(+1) 123-456-7890",
+  "phoneWhatsappUrl": "https://wa.me/11234567890",
+  "location": "1234 Abc Street, Example, EX 01234",
+  "linkedinUrl": "https://linkedin.com/in/example/",
+  "linkedinHandle": "example",
+  "email": "email@example.com"
+}
+
+
