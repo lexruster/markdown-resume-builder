@@ -6,6 +6,6 @@
 
 **Languages:** English (proficient), Indonesia (native)
 
+**Frontend:** Vue 3, Vite, Pinia, VueUse, Headless UI, Element Plus, Tailwind
 
-- Frontend: Vue 3, Vite, Pinia, VueUse, Headless UI, Element Plus, Tailwind
-- Backend: Node.js, TypeScript, testing, CI, observability, performance tuning
+**Backend:** Node.js, TypeScript, testing, CI, observability, performance tuning
