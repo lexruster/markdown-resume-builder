@@ -40,6 +40,25 @@ function registerHelpers(): void {
   });
 }
 
+function getProfile(): string {
+  // default to "sample"; allow --profile=alex or --profile alex
+  const argv = process.argv.slice(2);
+  let profile = process.env.PROFILE || "sample";
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--profile" && argv[i + 1]) {
+      profile = argv[i + 1];
+      break;
+    }
+    const m = arg.match(/^--profile=(.+)$/);
+    if (m) {
+      profile = m[1];
+      break;
+    }
+  }
+  return profile;
+}
+
 async function readIfExists(filePath: string): Promise<string | null> {
   try {
     const raw = await fs.readFile(filePath, "utf8");
@@ -49,8 +68,8 @@ async function readIfExists(filePath: string): Promise<string | null> {
   }
 }
 
-async function loadBaseSections(rootDir: string): Promise<Record<string, string>> {
-  const baseDir = path.join(rootDir, "content", "base");
+async function loadBaseSections(rootDir: string, profile: string): Promise<Record<string, string>> {
+  const baseDir = path.join(rootDir, "cvs", profile, "base");
   const sections: Record<string, string> = {};
   const mdFiles = await fg("*.md", { cwd: baseDir });
   if (mdFiles.length === 0) {
@@ -72,7 +91,8 @@ async function registerVariantPartials(
   rootDir: string,
   variantKey: string,
   baseSections: Record<string, string>,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  profile: string
 ): Promise<void> {
   // Start with base sections
   const computed: Record<string, string> = { ...baseSections };
@@ -84,7 +104,7 @@ async function registerVariantPartials(
   }
 
   // Apply overrides (delta appended after base by default) for all sections if present
-  const overridesDir = path.join(rootDir, "content", "variants", variantKey);
+  const overridesDir = path.join(rootDir, "cvs", profile, "override", variantKey);
   for (const key of Object.keys(baseSections)) {
     const overridePath = path.join(overridesDir, `${key}.md`);
     const overrideContent = await readIfExists(overridePath);
@@ -103,16 +123,16 @@ async function registerVariantPartials(
   }
 }
 
-async function readData(rootDir: string): Promise<Record<string, unknown>> {
-  const dataFile = path.join(rootDir, "data", "personal.json");
+async function readData(rootDir: string, profile: string): Promise<Record<string, unknown>> {
+  const dataFile = path.join(rootDir, "data", `personal.${profile}.json`);
   const raw = await fs.readFile(dataFile, "utf8");
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-async function compileVariant(rootDir: string, variantPath: string, context: BuildContext): Promise<void> {
+async function compileVariant(rootDir: string, variantPath: string, context: BuildContext, profile: string): Promise<void> {
   // Re-register partials for each variant to ensure overrides are applied correctly
-  const baseSections = await loadBaseSections(rootDir);
-  await registerVariantPartials(rootDir, context.variantKey, baseSections, context.data);
+  const baseSections = await loadBaseSections(rootDir, profile);
+  await registerVariantPartials(rootDir, context.variantKey, baseSections, context.data, profile);
 
   const templateSource = await fs.readFile(variantPath, "utf8");
 
@@ -155,17 +175,18 @@ async function copyCssIfPresent(rootDir: string): Promise<void> {
 
 async function buildAll(): Promise<void> {
   const rootDir = getRootDir();
+  const profile = getProfile();
   registerHelpers();
-  const data = await readData(rootDir);
+  const data = await readData(rootDir, profile);
   const variantsDir = path.join(rootDir, "variants");
   const variantFiles = await fg("*.md.hbs", { cwd: variantsDir });
   if (variantFiles.length === 0) {
-    throw new Error("No variant templates found in variants/*.md.hbs");
+    throw new Error(`No variant templates found in ${variantsDir}/*.md.hbs`);
   }
   for (const rel of variantFiles) {
     const abs = path.join(variantsDir, rel);
     const variantKey = path.basename(rel).replace(/\.md\.hbs$/, "");
-    await compileVariant(rootDir, abs, { variantKey, data });
+    await compileVariant(rootDir, abs, { variantKey, data }, profile);
   }
   await copyCssIfPresent(rootDir);
   const distDir = getDistDir(rootDir);
@@ -173,6 +194,7 @@ async function buildAll(): Promise<void> {
   // Basic console output for UX
   console.log("Built resumes:");
   for (const out of outputs) console.log(" -", out);
+  console.log(`Profile: ${profile}`);
 }
 
 buildAll().catch((err) => {

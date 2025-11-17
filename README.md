@@ -8,14 +8,15 @@ This small Node + TypeScript tool composes shared Markdown partials into three r
 
 ### References
 - Project used for UI/PDF export: `junian/markdown-resume` ([GitHub](https://github.com/junian/markdown-resume), [Live UI](https://www.junian.dev/markdown-resume/))
+Also https://ohmycv.app/ can be used, that have better styling.
 
 ### Project Structure
-- `data/personal.json`: basic person/contact data
-- `content/Base/*.md`: base sections shared by all variants
-  - `header.md`, `summary.md`, `experience.md`, `skills.md`, `education-awards-publications.md`
-- `content/variants/<variant>/*.md`: per-variant overrides (delta appended after base)
-  - For now: `summary.md`, `skills.md`
-- `variants/*.md.hbs`: role templates that include generic sections (`{{> summary}}`, `{{> skills}}`, etc.)
+- `data/personal.<profile>.json`: per-profile person/contact data (e.g., `personal.sample.json`, `personal.alex.json`)
+- `cvs/<profile>/base/*.md`: base sections for a profile
+  - `header.md`, `summary.md`, `experience.md`, `skills.md`, `education-awards-publications.md`, etc.
+- `cvs/<profile>/override/<variant>/*.md`: per-variant overrides for that profile (optional)
+  - Commonly `summary.md`, `skills.md`
+- `variants/*.md.hbs`: global templates (shared across profiles)
 - `scripts/build.ts`: builder that composes base + overrides for each variant, then compiles to Markdown
 - `dist/`: compiled Markdown outputs
 
@@ -35,26 +36,25 @@ npm i handlebars fast-glob
 ### Build
 
 ```bash
-npm run build
+npm run build -- --profile sample   # uses data/personal.sample.json and cvs/sample/*
+npm run build -- --profile alex     # uses data/personal.alex.json and cvs/alex/*
 ```
 
 Outputs:
-- `dist/engineering-manager.md`
-- `dist/staff-engineer.md`
-- `dist/senior-engineer.md`
+- `dist/<variant>.md` for each template in `variants/*.md.hbs`
 - `dist/css.css` (copy of `sample/css.css` for UI styling)
 
 Paste a generated `.md` into the Markdown Resume UI ([link](https://www.junian.dev/markdown-resume/)) and export your PDF.
 
 ### Customization Tips
-- Put shared content in `content/Base/*`.
-- Place per-variant additions in `content/variants/<variant>/summary.md` and `skills.md`. They will be appended after the corresponding base section.
+- Put shared content in `cvs/<profile>/base/*`.
+- Place per-variant additions in `cvs/<profile>/override/<variant>/summary.md` and `skills.md`. They will be appended after the corresponding base section (or inline if you use the `{{> base_*}}` alias).
 - If you prefer conditional bullets instead of appended overrides, you can also use helpers within base files:
   ```hbs
   {{#if (eq variant "engineering-manager")}}
   - Drove hiring plan across 3 teams and improved delivery predictability by 25%.
   {{/if}}
   ```
-- Add a new variant by adding a subfolder under `content/variants/<new-variant>/` and a template `variants/<new-variant>.md.hbs`.
+- Add a new variant by adding a template `variants/<new-variant>.md.hbs` and (optionally) overrides in `cvs/<profile>/override/<new-variant>/`.
 
 

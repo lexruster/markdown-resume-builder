@@ -137,4 +137,8 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-dataSource/*
+
+cvs/alex/base/desktop.ini
+cvs/alex/*
+desktop.ini
+data/personal.alex.json
