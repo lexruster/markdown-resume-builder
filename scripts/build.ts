@@ -124,7 +124,7 @@ async function registerVariantPartials(
 }
 
 async function readData(rootDir: string, profile: string): Promise<Record<string, unknown>> {
-  const dataFile = path.join(rootDir, "data", `personal.${profile}.json`);
+  const dataFile = path.join(rootDir, "cvs", profile, "personal.json");
   const raw = await fs.readFile(dataFile, "utf8");
   return JSON.parse(raw) as Record<string, unknown>;
 }

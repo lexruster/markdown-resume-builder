@@ -11,7 +11,7 @@ This small Node + TypeScript tool composes shared Markdown partials into three r
 Also https://ohmycv.app/ can be used, that have better styling.
 
 ### Project Structure
-- `data/personal.<profile>.json`: per-profile person/contact data (e.g., `personal.sample.json`, `personal.alex.json`)
+- `cvs/<profile>/personal.json`: per-profile person/contact data (e.g., `cvs/sample/personal.json`, `cvs/alex/personal.json`)
 - `cvs/<profile>/base/*.md`: base sections for a profile
   - `header.md`, `summary.md`, `experience.md`, `skills.md`, `education-awards-publications.md`, etc.
 - `cvs/<profile>/override/<variant>/*.md`: per-variant overrides for that profile (optional)
@@ -36,8 +36,8 @@ npm i handlebars fast-glob
 ### Build
 
 ```bash
-npm run build -- --profile sample   # uses data/personal.sample.json and cvs/sample/*
-npm run build -- --profile alex     # uses data/personal.alex.json and cvs/alex/*
+npm run build -- --profile sample   # uses cvs/sample/personal.json and cvs/sample/*
+npm run build -- --profile alex     # uses cvs/alex/personal.json and cvs/alex/*
 ```
 
 Outputs:

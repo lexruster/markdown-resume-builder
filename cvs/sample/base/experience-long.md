@@ -9,7 +9,7 @@
 - Designed a specialized cooking pan that improved research efficiency for team members
 - Documented techniques and measurements for reproducible kitchen experiments
 
-
+##
 **Engineering Chef Intern**
   : **University of California, Berkebake**
   : **Aug 2020 - Present**
@@ -19,7 +19,7 @@
 - Outperformed SOTA cooking methods in both efficiency and quality across experiments with popular tofu types
 - Collaborated with faculty and peers to scale recipes and validate results
 
-
+##
 **Student Chef**
   : **Cabbage Melon University**
   : **Mar 2020 - Jun 2020**
@@ -29,7 +29,7 @@
 - Established two new metrics for evaluating eating plan novelty and diversity
 - Significantly surpassed baselines in diversity, novelty, and coherence
 
-
+##
 **Research Chef Intern**
   : **Snapchopstick**
   : **Jul 2018 - Aug 2018**
