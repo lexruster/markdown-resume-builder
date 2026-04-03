@@ -16,7 +16,7 @@ Also https://ohmycv.app/ can be used, that have better styling.
   - `header.md`, `summary.md`, `experience.md`, `skills.md`, `education-awards-publications.md`, etc.
 - `cvs/<profile>/override/<variant>/*.md`: per-variant overrides for that profile (optional)
   - Commonly `summary.md`, `skills.md`
-- `variants/*.md.hbs`: global templates (shared across profiles)
+- `variants/<profile>/*.md.hbs`: per-profile variant templates (each profile has its own set of variants)
 - `scripts/build.ts`: builder that composes base + overrides for each variant, then compiles to Markdown
 - `dist/`: compiled Markdown outputs
 
@@ -41,7 +41,7 @@ npm run build -- --profile alex     # uses cvs/alex/personal.json and cvs/alex/*
 ```
 
 Outputs:
-- `dist/<variant>.md` for each template in `variants/*.md.hbs`
+- `dist/<variant>.md` for each template in `variants/<profile>/*.md.hbs`
 - `dist/css.css` (copy of `sample/css.css` for UI styling)
 
 Paste a generated `.md` into the Markdown Resume UI ([link](https://www.junian.dev/markdown-resume/)) and export your PDF.
@@ -49,17 +49,17 @@ Suggestion - choose blue theme
 
 ### Customization Tips
 - Put shared content in `cvs/<profile>/base/*`.
-- Place per-variant additions in `cvs/<profile>/override/<variant>/summary.md` and `skills.md`. They will be appended after the corresponding base section (or inline if you use the `{{> base_*}}` alias).
+- Place per-variant overrides in `cvs/<profile>/override/<variant>/`. An override **replaces** the base section entirely. Use `{{> base_*}}` inside the override to inline the base content where needed.
 - If you prefer conditional bullets instead of appended overrides, you can also use helpers within base files:
   ```hbs
   {{#if (eq variant "engineering-manager")}}
   - Drove hiring plan across 3 teams and improved delivery predictability by 25%.
   {{/if}}
   ```
-- Add a new variant by adding a template `variants/<new-variant>.md.hbs` and (optionally) overrides in `cvs/<profile>/override/<new-variant>/`.
+- Add a new variant by adding a template `variants/<profile>/<new-variant>.md.hbs` and (optionally) overrides in `cvs/<profile>/override/<new-variant>/`.
 
 
 ### Short Explanation
 `/cvs/<profile>/override` folder have subfolders per variant. 
-`/variants` have variants customizations file.
+`/variants/<profile>` have variant templates per profile.
 When CV is built, builder will take variant name and use override folder with the same name

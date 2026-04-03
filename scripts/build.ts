@@ -180,7 +180,7 @@ async function buildAll(): Promise<void> {
   const profile = getProfile();
   registerHelpers();
   const data = await readData(rootDir, profile);
-  const variantsDir = path.join(rootDir, "variants");
+  const variantsDir = path.join(rootDir, "variants", profile);
   const variantFiles = await fg("*.md.hbs", { cwd: variantsDir });
   if (variantFiles.length === 0) {
     throw new Error(`No variant templates found in ${variantsDir}/*.md.hbs`);
