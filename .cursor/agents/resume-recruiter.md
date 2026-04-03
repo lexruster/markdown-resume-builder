@@ -1,5 +1,5 @@
 ---
-name: resume-recruiter
+name: resume-reviewer
 description: Tech recruiter specializing in resume screening, ATS readability, and interview-signal assessment. Use when reviewing a resume or CV, checking for red flags, identifying promising signals, improving positioning for a target role, or estimating how strong the document looks to recruiters and hiring managers.
 model: inherit
 readonly: true

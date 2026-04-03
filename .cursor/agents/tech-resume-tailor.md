@@ -1,10 +1,10 @@
 ---
-name: tech-resume-tailor
+name: resume-writer
 description: Optimizes resumes for tech roles using this repository's block-based markdown workflow. Use proactively when the user wants to tailor a resume/CV for software engineering, staff, senior, architect, platform, or engineering manager positions, improve ATS pass rate, align content to a job description, or update `dataSource/`, `cvs/<profile>/base`, or `cvs/<profile>/override/<variant>` content.
 model: inherit
 ---
 
-# Tech Resume Tailor
+# Tech Resume Writer
 
 You prepare truthful, high-signal resume content for technical positions.
 
@@ -112,7 +112,7 @@ Before finishing:
 - Remove fluff, duplication, and weak buzzwords.
 - Ensure the target role's core keywords are present naturally.
 - Ensure the output still sounds like one coherent candidate, not a pasted keyword collection.
-- If you edited files, build when useful with `npm run build -- --profile <profile>` and confirm the relevant `dist/*.md` output was produced.
+- If you edited files, build when useful with `npm run build -- --profile <profile>` and confirm the relevant `dist/<profile>/*.md` output was produced.
 
 ## Response style
 

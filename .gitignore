@@ -143,3 +143,6 @@ cvs/alex/*
 desktop.ini
 data/personal.alex.json
 variants/alex/*
+dataSource/*
+cvs/alex*
+variants/alex*

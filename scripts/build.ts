@@ -15,7 +15,11 @@ function getRootDir(): string {
   return path.resolve(__dirname, "..");
 }
 
-function getDistDir(rootDir: string): string {
+/** When true, outputs go under `dist/<profile>/`; otherwise flat `dist/` (default build). */
+function getDistDir(rootDir: string, profile: string, useProfileSubdir: boolean): string {
+  if (useProfileSubdir) {
+    return path.join(rootDir, "dist", profile);
+  }
   return path.join(rootDir, "dist");
 }
 
@@ -40,23 +44,26 @@ function registerHelpers(): void {
   });
 }
 
-function getProfile(): string {
+function getProfileResolution(): { profile: string; useProfileSubdir: boolean } {
   // default to "sample"; allow --profile=alex or --profile alex
   const argv = process.argv.slice(2);
   let profile = process.env.PROFILE || "sample";
+  let useProfileSubdir = Boolean(process.env.PROFILE);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--profile" && argv[i + 1]) {
       profile = argv[i + 1];
+      useProfileSubdir = true;
       break;
     }
     const m = arg.match(/^--profile=(.+)$/);
     if (m) {
       profile = m[1];
+      useProfileSubdir = true;
       break;
     }
   }
-  return profile;
+  return { profile, useProfileSubdir };
 }
 
 async function readIfExists(filePath: string): Promise<string | null> {
@@ -127,7 +134,13 @@ async function readData(rootDir: string, profile: string): Promise<Record<string
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-async function compileVariant(rootDir: string, variantPath: string, context: BuildContext, profile: string): Promise<void> {
+async function compileVariant(
+  rootDir: string,
+  variantPath: string,
+  context: BuildContext,
+  profile: string,
+  distDir: string
+): Promise<void> {
   // Read the variant template first to extract optional flags that should
   // influence how overrides are compiled (e.g., exclude_latest_experience).
   const templateSource = await fs.readFile(variantPath, "utf8");
@@ -154,19 +167,17 @@ async function compileVariant(rootDir: string, variantPath: string, context: Bui
 
   const template = Handlebars.compile(templateBody, { noEscape: true });
   const compiled = template({ ...dataWithFlags, variant: context.variantKey });
-  const distDir = getDistDir(rootDir);
   await ensureDir(distDir);
   const baseName = path.basename(variantPath).replace(/\.md\.hbs$/, "");
   const outputPath = path.join(distDir, `${baseName}.md`);
   await fs.writeFile(outputPath, compiled, "utf8");
 }
 
-async function copyCssIfPresent(rootDir: string): Promise<void> {
+async function copyCssIfPresent(rootDir: string, distDir: string): Promise<void> {
   const sourceCss = path.join(rootDir, "sample", "css.css");
   try {
     const stat = await fs.stat(sourceCss);
     if (stat.isFile()) {
-      const distDir = getDistDir(rootDir);
       await ensureDir(distDir);
       await fs.copyFile(sourceCss, path.join(distDir, "css.css"));
     }
@@ -177,7 +188,8 @@ async function copyCssIfPresent(rootDir: string): Promise<void> {
 
 async function buildAll(): Promise<void> {
   const rootDir = getRootDir();
-  const profile = getProfile();
+  const { profile, useProfileSubdir } = getProfileResolution();
+  const distDir = getDistDir(rootDir, profile, useProfileSubdir);
   registerHelpers();
   const data = await readData(rootDir, profile);
   const variantsDir = path.join(rootDir, "variants", profile);
@@ -188,11 +200,13 @@ async function buildAll(): Promise<void> {
   for (const rel of variantFiles) {
     const abs = path.join(variantsDir, rel);
     const variantKey = path.basename(rel).replace(/\.md\.hbs$/, "");
-    await compileVariant(rootDir, abs, { variantKey, data }, profile);
+    await compileVariant(rootDir, abs, { variantKey, data }, profile, distDir);
   }
-  await copyCssIfPresent(rootDir);
-  const distDir = getDistDir(rootDir);
-  const outputs = (await fg("*.md", { cwd: distDir })).map(f => path.join("dist", f));
+  await copyCssIfPresent(rootDir, distDir);
+  const relDist = path.relative(rootDir, distDir);
+  const outputs = (await fg("*.md", { cwd: distDir })).map((f) =>
+    path.join(relDist, f).split(path.sep).join("/")
+  );
   // Basic console output for UX
   console.log("Built resumes:");
   for (const out of outputs) console.log(" -", out);

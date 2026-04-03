@@ -4,7 +4,7 @@ This small Node + TypeScript tool composes shared Markdown partials into three r
 
 - Built for Windows 11 and cross-platform.
 - Uses Handlebars partials for reuse and simple helpers for conditional content if needed.
-- Produces `dist/*.md` files and copies `sample/css.css` to `dist/css.css` for convenience.
+- Produces `dist/*.md` (default build) or `dist/<profile>/*.md` when you pass `--profile <profile>` or set `PROFILE`; copies `sample/css.css` into the same output folder.
 
 ### References
 - Project used for UI/PDF export: `junian/markdown-resume` ([GitHub](https://github.com/junian/markdown-resume), [Live UI](https://www.junian.dev/markdown-resume/))
@@ -41,8 +41,8 @@ npm run build -- --profile alex     # uses cvs/alex/personal.json and cvs/alex/*
 ```
 
 Outputs:
-- `dist/<variant>.md` for each template in `variants/<profile>/*.md.hbs`
-- `dist/css.css` (copy of `sample/css.css` for UI styling)
+- `dist/<variant>.md` for each template in `variants/<profile>/*.md.hbs` when using the default build; `dist/<profile>/<variant>.md` when the profile is set explicitly (`--profile` or `PROFILE`).
+- `css.css` in the same folder as those `.md` files (copy of `sample/css.css` for UI styling)
 
 Paste a generated `.md` into the Markdown Resume UI ([link](https://www.junian.dev/markdown-resume/)) and export your PDF.
 Suggestion - choose blue theme

@@ -10,7 +10,7 @@ This repository composes shared Markdown sections into multiple role‑specific 
   - `cvs/<profile>/personal.json` (all fields are available to templates)
   - per-template flags (parsed from the template header)
   - `variant` (current variant key, e.g., `"engineering-manager"`)
-- Write outputs to `dist/*.md` and copy `sample/css.css` to `dist/css.css` (if present).
+- Write outputs under `dist/` (see **Output paths** below) and copy `sample/css.css` alongside the Markdown files (if present).
 
 ---
 
@@ -28,9 +28,14 @@ This repository composes shared Markdown sections into multiple role‑specific 
 - `scripts/build.ts`
   - Node + TypeScript builder that orchestrates composition and compilation.
 - `sample/css.css`
-  - Example CSS you can load in the Markdown Resume UI for styling; copied to `dist/css.css`.
+  - Example CSS you can load in the Markdown Resume UI for styling; copied next to generated `.md` files (see **Output paths**).
 - `dist/`
   - Build outputs: one Markdown file per variant + CSS copy.
+
+**Output paths**
+
+- Default build (`npm run build` with no profile flag and no `PROFILE` env): `dist/<variant>.md` and `dist/css.css`.
+- When a profile is selected explicitly (`npm run build -- --profile <name>` or `--profile=<name>`, or `PROFILE=<name>`): `dist/<name>/<variant>.md` and `dist/<name>/css.css`.
 
 ---
 
@@ -44,7 +49,7 @@ Build steps handled in `scripts/build.ts`:
    - Overrides are compiled as templates with the same context, flags, and helpers.
 4. Register each computed section (after override processing) as a Handlebars partial named exactly by its section key (e.g., `summary`, `skills`, `header`, `education-awards-publications`).
 5. Compile each template in `variants/<profile>/*.md.hbs` with context `{ ...personalData, ...flags, variant }`.
-6. Write Markdown outputs to `dist/` and copy CSS.
+6. Write Markdown outputs to `dist/` (or `dist/<profile>/` when the profile is explicit) and copy CSS to the same folder.
 
 Example minimal template (`variants/<profile>/<variant>.md.hbs`):
 
@@ -149,7 +154,7 @@ Notes:
 3. Build:
    - `npm run build -- --profile <profile>`
 4. Find the output:
-   - `dist/<new-variant>.md`
+   - `dist/<new-variant>.md` (default build), or `dist/<profile>/<new-variant>.md` when building with `--profile <profile>` or `PROFILE=<profile>`.
 
 You can omit override files—if not present, only base content is used.
 
@@ -185,7 +190,7 @@ Build all variants:
 npm run build
 ```
 
-Outputs:
+Outputs (default build; use `dist/<profile>/` when you pass `--profile <profile>` or set `PROFILE`):
 - `dist/engineering-manager.md`
 - `dist/staff-engineer.md`
 - `dist/senior-engineer.md`
@@ -194,7 +199,7 @@ Outputs:
 Export to PDF:
 1. Open the Markdown Resume UI.
 2. Paste a generated `.md` file into the editor.
-3. Optionally import `dist/css.css` for consistent styling.
+3. Optionally import `css.css` from the same folder as that `.md` for consistent styling.
 4. Export to A4/US Letter PDF from the UI.
 
 ---
