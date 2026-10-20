@@ -15,20 +15,25 @@ function getRootDir(): string {
   return path.resolve(__dirname, "..");
 }
 
-/** Explicit paths are resolved against the invoking process's working directory. */
-function getPathOption(name: string): string | undefined {
+function getOption(name: string): string | undefined {
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === name || arg.startsWith(`${name}=`)) {
       const value = arg === name ? argv[i + 1] : arg.slice(name.length + 1);
       if (!value || value.startsWith("--")) {
-        throw new Error(`Missing path for ${name}`);
+        throw new Error(`Missing value for ${name}`);
       }
-      return path.resolve(value);
+      return value;
     }
   }
   return undefined;
+}
+
+/** Explicit paths are resolved against the invoking process's working directory. */
+function getPathOption(name: string): string | undefined {
+  const value = getOption(name);
+  return value === undefined ? undefined : path.resolve(value);
 }
 
 /** When true, outputs go under `dist/<profile>/`; otherwise flat `dist/` (default build). */
@@ -91,8 +96,7 @@ async function readIfExists(filePath: string): Promise<string | null> {
   }
 }
 
-async function loadBaseSections(rootDir: string, profile: string): Promise<Record<string, string>> {
-  const baseDir = path.join(rootDir, "cvs", profile, "base");
+async function loadBaseSections(baseDir: string): Promise<Record<string, string>> {
   const sections: Record<string, string> = {};
   const mdFiles = await fg("*.md", { cwd: baseDir });
   if (mdFiles.length === 0) {
@@ -111,12 +115,13 @@ async function loadBaseSections(rootDir: string, profile: string): Promise<Recor
 }
 
 async function registerVariantPartials(
-  rootDir: string,
+  overridesDir: string,
   variantKey: string,
   baseSections: Record<string, string>,
-  data: Record<string, unknown>,
-  profile: string
+  data: Record<string, unknown>
 ): Promise<void> {
+  // Each application may select a different profile. Do not retain its partials.
+  for (const name of Object.keys(Handlebars.partials)) Handlebars.unregisterPartial(name);
   // Start with base sections
   const computed: Record<string, string> = { ...baseSections };
 
@@ -128,7 +133,6 @@ async function registerVariantPartials(
 
   // Apply overrides: override replaces the base section entirely.
   // Use {{> base_<section>}} inside the override to inline base content where needed.
-  const overridesDir = path.join(rootDir, "cvs", profile, "override", variantKey);
   for (const key of Object.keys(baseSections)) {
     const overridePath = path.join(overridesDir, `${key}.md`);
     const overrideContent = await readIfExists(overridePath);
@@ -151,11 +155,12 @@ async function readData(rootDir: string, profile: string): Promise<Record<string
 }
 
 async function compileVariant(
-  rootDir: string,
   variantPath: string,
   context: BuildContext,
-  profile: string,
-  distDir: string
+  baseDir: string,
+  overridesDir: string,
+  outputPath: string,
+  applicationFlags: Record<string, unknown> = {}
 ): Promise<void> {
   // Read the variant template first to extract optional flags that should
   // influence how overrides are compiled (e.g., exclude_latest_experience).
@@ -177,16 +182,54 @@ async function compileVariant(
 
   // Re-register partials for each variant to ensure overrides are applied correctly.
   // Important: pass flags into the data so overridden sections are compiled with them.
-  const baseSections = await loadBaseSections(rootDir, profile);
-  const dataWithFlags = { ...context.data, ...flags };
-  await registerVariantPartials(rootDir, context.variantKey, baseSections, dataWithFlags, profile);
+  const baseSections = await loadBaseSections(baseDir);
+  const dataWithFlags = { ...context.data, ...flags, ...applicationFlags };
+  await registerVariantPartials(overridesDir, context.variantKey, baseSections, dataWithFlags);
 
   const template = Handlebars.compile(templateBody, { noEscape: true });
   const compiled = template({ ...dataWithFlags, variant: context.variantKey });
-  await ensureDir(distDir);
-  const baseName = path.basename(variantPath).replace(/\.md\.hbs$/, "");
-  const outputPath = path.join(distDir, `${baseName}.md`);
+  await ensureDir(path.dirname(outputPath));
   await fs.writeFile(outputPath, compiled, "utf8");
+}
+
+function isFolderName(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0
+    && value !== "." && value !== ".." && !/[\\/]/.test(value);
+}
+
+async function buildApplications(applicationsRoot: string, profilesRoot: string, outputDir: string): Promise<void> {
+  const selected = getOption("--application");
+  if (selected !== undefined && !isFolderName(selected)) throw new Error("Invalid application folder name");
+  const configs = selected
+    ? [path.join(selected, "application.json")]
+    : (await fg("*/application.json", { cwd: applicationsRoot })).sort();
+  if (configs.length === 0) throw new Error(`No application.json files found in ${applicationsRoot}`);
+
+  for (const relativeConfig of configs) {
+    const configPath = path.join(applicationsRoot, relativeConfig);
+    const config: unknown = JSON.parse(await fs.readFile(configPath, "utf8"));
+    if (!config || typeof config !== "object" || Array.isArray(config)) {
+      throw new Error(`Expected a JSON object in ${configPath}`);
+    }
+    const { profile, flags = {} } = config as Record<string, unknown>;
+    if (!isFolderName(profile)) throw new Error(`Invalid or missing profile in ${configPath}`);
+    if (!flags || typeof flags !== "object" || Array.isArray(flags)) {
+      throw new Error(`Expected a flags object in ${configPath}`);
+    }
+    const applicationDir = path.dirname(configPath);
+    const application = path.basename(applicationDir);
+    const profileDir = path.join(profilesRoot, profile);
+    const personalData = JSON.parse(await fs.readFile(path.join(profileDir, "personal.json"), "utf8"));
+    await compileVariant(
+      path.join(applicationDir, "resume.md.hbs"),
+      { variantKey: application, data: { ...personalData, profile, application } },
+      profileDir,
+      applicationDir,
+      path.join(outputDir, `${application}.md`),
+      flags as Record<string, unknown>
+    );
+    console.log(` - ${application}.md (profile: ${profile})`);
+  }
 }
 
 async function copyCssIfPresent(rootDir: string, distDir: string, cssPath?: string): Promise<void> {
@@ -205,11 +248,32 @@ async function copyCssIfPresent(rootDir: string, distDir: string, cssPath?: stri
 
 async function buildAll(): Promise<void> {
   const builderRoot = getRootDir();
-  const rootDir = getPathOption("--source-root") ?? builderRoot;
+  let applicationsRoot = getPathOption("--applications-root");
+  let profilesRoot = getPathOption("--profiles-root");
+  const legacyRoot = getPathOption("--source-root");
+  if (!legacyRoot && !applicationsRoot && !profilesRoot) {
+    applicationsRoot = path.join(builderRoot, "applications");
+    profilesRoot = path.join(builderRoot, "resume");
+  }
+  if (legacyRoot && (applicationsRoot || profilesRoot)) {
+    throw new Error("Do not combine --source-root with application build paths");
+  }
+  registerHelpers();
+  if (applicationsRoot || profilesRoot) {
+    if (!applicationsRoot || !profilesRoot) {
+      throw new Error("Application builds require both --applications-root and --profiles-root");
+    }
+    const outputDir = getPathOption("--output-dir") ?? path.join(builderRoot, "dist");
+    console.log("Built applications:");
+    await buildApplications(applicationsRoot, profilesRoot, outputDir);
+    await copyCssIfPresent(builderRoot, outputDir, getPathOption("--css"));
+    return;
+  }
+  if (getOption("--application")) throw new Error("--application requires application build paths");
+  const rootDir = legacyRoot ?? builderRoot;
   const { profile, useProfileSubdir } = getProfileResolution();
   const distDir = getPathOption("--output-dir") ?? getDistDir(rootDir, profile, useProfileSubdir);
   const cssPath = getPathOption("--css");
-  registerHelpers();
   const data = await readData(rootDir, profile);
   const variantsDir = path.join(rootDir, "variants", profile);
   const variantFiles = await fg("*.md.hbs", { cwd: variantsDir });
@@ -219,7 +283,12 @@ async function buildAll(): Promise<void> {
   for (const rel of variantFiles) {
     const abs = path.join(variantsDir, rel);
     const variantKey = path.basename(rel).replace(/\.md\.hbs$/, "");
-    await compileVariant(rootDir, abs, { variantKey, data }, profile, distDir);
+    await compileVariant(
+      abs, { variantKey, data },
+      path.join(rootDir, "cvs", profile, "base"),
+      path.join(rootDir, "cvs", profile, "override", variantKey),
+      path.join(distDir, `${variantKey}.md`)
+    );
   }
   await copyCssIfPresent(builderRoot, distDir, cssPath);
   const relDist = path.relative(rootDir, distDir);

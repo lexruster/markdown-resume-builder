@@ -1,79 +1,105 @@
-## Multi-variant Markdown Resume (Composable)
+# Markdown Resume Builder
 
-This small Node + TypeScript tool composes shared Markdown partials into three role-specific resumes (Engineering Manager, Staff Engineer, Senior Engineer) with minimal duplication. It outputs plain Markdown that you can paste into the Markdown Resume UI and export PDFs.
+Compose reusable profile data and application-specific templates into Markdown resumes with Handlebars. An application can be a general resume, a role-focused version, or a tailored job application; all use the same folder structure.
 
-- Built for Windows 11 and cross-platform.
-- Uses Handlebars partials for reuse and simple helpers for conditional content if needed.
-- Produces `dist/*.md` (default build) or `dist/<profile>/*.md` when you pass `--profile <profile>` or set `PROFILE`; copies `sample/css.css` into the same output folder.
-
-### References
-- Project used for UI/PDF export: `junian/markdown-resume` ([GitHub](https://github.com/junian/markdown-resume), [Live UI](https://www.junian.dev/markdown-resume/))
-Also https://ohmycv.app/ can be used, that have better styling.
-
-### Project Structure
-- `cvs/<profile>/personal.json`: per-profile person/contact data (e.g., `cvs/sample/personal.json`, `cvs/alex/personal.json`)
-- `cvs/<profile>/base/*.md`: base sections for a profile
-  - `header.md`, `summary.md`, `experience.md`, `skills.md`, `education-awards-publications.md`, etc.
-- `cvs/<profile>/override/<variant>/*.md`: per-variant overrides for that profile (optional)
-  - Commonly `summary.md`, `skills.md`
-- `variants/<profile>/*.md.hbs`: per-profile variant templates (each profile has its own set of variants)
-- `scripts/build.ts`: builder that composes base + overrides for each variant, then compiles to Markdown
-- `dist/`: compiled Markdown outputs
-
-### Install
-
-```bash
-npm install
-```
-
-If you cloned just this folder into an existing repo without `node_modules`, install dev/runtime deps:
-
-```bash
-npm i -D typescript ts-node @types/node
-npm i handlebars fast-glob
-```
-
-### Build
-
-```bash
-npm run build -- --profile sample   # uses cvs/sample/personal.json and cvs/sample/*
-npm run build -- --profile alex     # uses cvs/alex/personal.json and cvs/alex/*
-```
-
-Outputs:
-- `dist/<variant>.md` for each template in `variants/<profile>/*.md.hbs` when using the default build; `dist/<profile>/<variant>.md` when the profile is set explicitly (`--profile` or `PROFILE`).
-- `css.css` in the same folder as those `.md` files (copy of `sample/css.css` for UI styling)
-
-Paste a generated `.md` into the Markdown Resume UI ([link](https://www.junian.dev/markdown-resume/)) and export your PDF.
-Suggestion - choose blue theme
-
-### Customization Tips
-- Put shared content in `cvs/<profile>/base/*`.
-- Place per-variant overrides in `cvs/<profile>/override/<variant>/`. An override **replaces** the base section entirely. Use `{{> base_*}}` inside the override to inline the base content where needed.
-- If you prefer conditional bullets instead of appended overrides, you can also use helpers within base files:
-  ```hbs
-  {{#if (eq variant "engineering-manager")}}
-  - Drove hiring plan across 3 teams and improved delivery predictability by 25%.
-  {{/if}}
-  ```
-- Add a new variant by adding a template `variants/<profile>/<new-variant>.md.hbs` and (optionally) overrides in `cvs/<profile>/override/<new-variant>/`.
-
-
-### Short Explanation
-`/cvs/<profile>/override` folder have subfolders per variant. 
-`/variants/<profile>` have variant templates per profile.
-When CV is built, builder will take variant name and use override folder with the same name
-
-## External resume sources
-
-Keep private resume content outside the builder by passing explicit paths:
+## Quick start
 
 ```sh
-npm run build -- --profile alex --source-root /path/to/private/resume --output-dir /path/to/private/exports/current --css /path/to/private/resume/css.css
+npm ci
+npm run build
+npm test
 ```
 
-- `--source-root`: folder containing `cvs/<profile>/` and `variants/<profile>/`.
-- `--output-dir`: exact destination for Markdown and CSS; no profile subfolder is added.
-- `--css`: optional custom CSS file. An explicitly supplied missing file fails the build; otherwise the bundled `sample/css.css` is used when present.
+The default build uses the included sample profile and applications. Results are written to dist/<application>.md, with css.css alongside them. Paste Markdown into [Oh My CV](https://ohmycv.app/) or [Markdown Resume](https://www.junian.dev/markdown-resume/) for PDF export.
 
-Both `--option value` and `--option=value` forms are supported. Explicit paths are relative to the process working directory, not the script's location. Without these options, existing standalone builds retain their original paths and behavior.
+## Structure
+
+```text
+resume/
+  sample/
+    personal.json                 # Person's contact and template data
+    *.md                     # Shared sections; no application overrides here
+applications/
+  sample/
+    application.json              # Profile selection and flags
+    resume.md.hbs                 # Section order and layout
+    summary.md           # Optional replacement sections
+  sample-engineering-manager/     # Another application using the same profile
+  sample-short/
+sample/css.css                    # Default stylesheet
+scripts/build.ts                  # Composition engine
+```
+
+There is no separate variants directory. Copy an application folder to create a new version. To support another person, add a profile under resume/ and select it in application.json.
+
+## Application configuration
+
+```json
+{
+  "profile": "sample",
+  "flags": {
+    "show_projects": true
+  }
+}
+```
+
+The profile must name a direct child folder under resume/. Each application requires application.json and resume.md.hbs. Flags are optional and default to an empty object. No settings are inherited from another application.
+
+Example resume.md.hbs:
+
+```hbs
+{{> header}}
+
+## Summary
+{{> summary}}
+
+{{> skills}}
+{{> experience}}
+{{> education-awards-publications}}
+
+{{#if show_projects}}
+{{> projects}}
+{{/if}}
+```
+
+All *.md files directly under the profile directory become partials. An application's <section>.md directly in its folder replaces that section. Only filenames matching existing profile sections are loaded; unrelated files such as job.md are ignored. To include the original text inside a replacement, use its base alias:
+
+```hbs
+{{> base_summary}}
+
+Additional emphasis for this application.
+```
+
+Aliases replace dashes with underscores: education-awards-publications becomes base_education_awards_publications. Personal data, flags, application, profile, and variant (an alias of the application key) are available in templates and sections. Helpers: eq, ne, and, or. Application JSON flags take precedence over legacy flags comments in a template. Partials and flags are isolated between applications, including applications for different people.
+
+## Build one application
+
+```sh
+npm run build -- --application sample
+```
+
+Without --application, all folders containing application.json are built. An application can also contain job.md, notes, and external result links; the builder ignores these files.
+
+## Use external private data
+
+```sh
+npm run build -- --profiles-root /path/to/private/resume --applications-root /path/to/private/applications --output-dir /path/to/private/exports/current --css /path/to/private/resume/css.css
+```
+
+- --profiles-root: folder containing <profile>/personal.json and <profile>/*.md.
+- --applications-root: folder containing <application>/application.json, resume.md.hbs, and optional section Markdown files.
+- --output-dir: exact output folder; defaults to the builder's dist/.
+- --css: optional stylesheet; defaults to the bundled sample/css.css. A missing explicit file fails the build.
+- --application: optional application folder name.
+
+Supply both external root options together. Paths resolve from the process working directory. Both --option value and --option=value are supported. Keep private sources outside a public builder checkout.
+
+## Legacy source layout
+
+Existing external sources using cvs/<profile>/ and variants/<profile>/ remain supported through explicit legacy mode:
+
+```sh
+npm run build -- --source-root /path/to/old-sources --profile sample --output-dir /path/to/output
+```
+
+Do not combine --source-root with application root options. Legacy --profile and PROFILE select a person only in this mode. New applications select their profile in application.json.

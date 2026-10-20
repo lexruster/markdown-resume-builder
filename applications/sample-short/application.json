@@ -1,0 +1,6 @@
+{
+  "profile": "sample",
+  "flags": {
+    "exclude_latest_experience": true
+  }
+}
