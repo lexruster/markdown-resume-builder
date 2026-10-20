@@ -63,3 +63,17 @@ Suggestion - choose blue theme
 `/cvs/<profile>/override` folder have subfolders per variant. 
 `/variants/<profile>` have variant templates per profile.
 When CV is built, builder will take variant name and use override folder with the same name
+
+## External resume sources
+
+Keep private resume content outside the builder by passing explicit paths:
+
+```sh
+npm run build -- --profile alex --source-root /path/to/private/resume --output-dir /path/to/private/exports/current --css /path/to/private/resume/css.css
+```
+
+- `--source-root`: folder containing `cvs/<profile>/` and `variants/<profile>/`.
+- `--output-dir`: exact destination for Markdown and CSS; no profile subfolder is added.
+- `--css`: optional custom CSS file. An explicitly supplied missing file fails the build; otherwise the bundled `sample/css.css` is used when present.
+
+Both `--option value` and `--option=value` forms are supported. Explicit paths are relative to the process working directory, not the script's location. Without these options, existing standalone builds retain their original paths and behavior.

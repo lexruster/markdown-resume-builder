@@ -15,6 +15,22 @@ function getRootDir(): string {
   return path.resolve(__dirname, "..");
 }
 
+/** Explicit paths are resolved against the invoking process's working directory. */
+function getPathOption(name: string): string | undefined {
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === name || arg.startsWith(`${name}=`)) {
+      const value = arg === name ? argv[i + 1] : arg.slice(name.length + 1);
+      if (!value || value.startsWith("--")) {
+        throw new Error(`Missing path for ${name}`);
+      }
+      return path.resolve(value);
+    }
+  }
+  return undefined;
+}
+
 /** When true, outputs go under `dist/<profile>/`; otherwise flat `dist/` (default build). */
 function getDistDir(rootDir: string, profile: string, useProfileSubdir: boolean): string {
   if (useProfileSubdir) {
@@ -173,23 +189,26 @@ async function compileVariant(
   await fs.writeFile(outputPath, compiled, "utf8");
 }
 
-async function copyCssIfPresent(rootDir: string, distDir: string): Promise<void> {
-  const sourceCss = path.join(rootDir, "sample", "css.css");
+async function copyCssIfPresent(rootDir: string, distDir: string, cssPath?: string): Promise<void> {
+  const sourceCss = cssPath ?? path.join(rootDir, "sample", "css.css");
   try {
     const stat = await fs.stat(sourceCss);
     if (stat.isFile()) {
       await ensureDir(distDir);
       await fs.copyFile(sourceCss, path.join(distDir, "css.css"));
     }
-  } catch {
+  } catch (error) {
+    if (cssPath) throw error;
     // optional
   }
 }
 
 async function buildAll(): Promise<void> {
-  const rootDir = getRootDir();
+  const builderRoot = getRootDir();
+  const rootDir = getPathOption("--source-root") ?? builderRoot;
   const { profile, useProfileSubdir } = getProfileResolution();
-  const distDir = getDistDir(rootDir, profile, useProfileSubdir);
+  const distDir = getPathOption("--output-dir") ?? getDistDir(rootDir, profile, useProfileSubdir);
+  const cssPath = getPathOption("--css");
   registerHelpers();
   const data = await readData(rootDir, profile);
   const variantsDir = path.join(rootDir, "variants", profile);
@@ -202,7 +221,7 @@ async function buildAll(): Promise<void> {
     const variantKey = path.basename(rel).replace(/\.md\.hbs$/, "");
     await compileVariant(rootDir, abs, { variantKey, data }, profile, distDir);
   }
-  await copyCssIfPresent(rootDir, distDir);
+  await copyCssIfPresent(builderRoot, distDir, cssPath);
   const relDist = path.relative(rootDir, distDir);
   const outputs = (await fg("*.md", { cwd: distDir })).map((f) =>
     path.join(relDist, f).split(path.sep).join("/")

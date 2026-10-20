@@ -229,3 +229,7 @@ Export to PDF:
 - Live UI for preview and PDF export: [junian.dev/markdown-resume](https://www.junian.dev/markdown-resume/)
 
 
+
+## External source projects
+
+The builder accepts --source-root (contains cvs/ and variants/), --output-dir (exact output folder), and --css (optional custom stylesheet). Relative explicit paths resolve from process.cwd(). Defaults preserve standalone builds. When used as a submodule, follow the consuming repository's instructions for personal resume content; do not store personal content inside this public tool.
