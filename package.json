@@ -4,17 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/applications.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "build": "ts-node scripts/build.ts",
-    "clean": "node -e \"import('fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\""
+    "clean": "node -e \"import('fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\"",
+    "ui": "node scripts/ui-server.mjs",
+    "test:browser": "node --test tests/browser/*.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.19.1",
+    "pdfjs-dist": "^6.4.299",
+    "playwright": "^1.64.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@fontsource/source-serif-4": "^5.3.1",
     "fast-glob": "^3.3.3",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "markdown-it": "^15.0.3",
+    "markdown-it-deflist": "^4.0.0",
+    "pagedjs": "^0.4.3",
+    "sanitize-html": "^2.18.1"
   }
 }

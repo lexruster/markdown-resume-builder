@@ -1,0 +1,43 @@
+@font-face{font-family:"Minion Pro";font-weight:400;font-style:normal;src:local("Minion Pro"),local("MinionPro-Regular")}
+@font-face{font-family:"Minion Pro";font-weight:700;font-style:normal;src:local("Minion Pro Bold"),local("MinionPro-Bold")}
+@font-face{font-family:"Minion Pro";font-weight:400;font-style:italic;src:local("Minion Pro Italic"),local("MinionPro-It")}
+@font-face{font-family:"Source Serif 4";font-weight:400;font-style:normal;src:url("/fonts/regular.woff2") format("woff2")}
+@font-face{font-family:"Source Serif 4";font-weight:400;font-style:italic;src:url("/fonts/italic.woff2") format("woff2")}
+@font-face{font-family:"Source Serif 4";font-weight:700;font-style:normal;src:url("/fonts/bold.woff2") format("woff2")}
+*{box-sizing:border-box}
+body{margin:0;color:#151c20;font-family:var(--resume-font,"Source Serif 4"),"Source Serif 4",Georgia,serif;font-size:var(--resume-size,15px);line-height:var(--resume-leading,1.3)}
+a{color:var(--resume-accent,#377bb5);text-decoration:none;overflow-wrap:anywhere}
+h1,h2,h3{font-weight:700;break-after:avoid;page-break-after:avoid}
+h1{font-size:2.13em;line-height:1.15;text-align:center;margin:0 0 14px}
+h2{font-size:1.2em;line-height:1.2;margin:15px 0 5px;border-bottom:1px solid var(--resume-accent,#377bb5);padding-bottom:3px;color:var(--resume-accent,#377bb5)}
+h3{font-size:1.08em;margin:10px 0 4px}
+p,dl{margin:0 0 5px;orphans:2;widows:2}
+ul,ol{padding-left:1.5em;margin:4px 0 9px}
+li{margin:0 0 3px;orphans:2;widows:2}
+li p{margin:0}
+dl{display:flex;gap:10px;align-items:baseline}
+dt{flex:1}dd{margin:0}dd:not(:last-child){flex:1}
+table{width:100%;border-collapse:collapse}td,th{padding:3px;text-align:left}
+img{max-width:100%}blockquote{margin:6px 0;padding-left:12px;border-left:2px solid #ccc}
+.page-break{break-before:page}
+.iconify{display:inline-flex;width:1em;height:1em;vertical-align:-.12em}
+.iconify svg{width:1em;height:1em}
+.resume-header{text-align:center}
+
+
+dd:last-child{white-space:nowrap}
+.contact-details{flex-wrap:wrap;gap:3px 16px;margin-bottom:10px}
+.contact-details>dt,.contact-details>dd{flex:1 1 45%;margin:0;white-space:normal}
+.contact-details>dt:first-child{flex-basis:55%}
+.contact-details>dd:nth-child(2){flex-basis:35%;text-align:right}
+.contact-details>dd:last-child{text-align:right}
+
+.keep-with-next{break-after:avoid;break-inside:avoid}
+
+/* Empty level-two headings in existing Markdown are intentional divider lines. */
+.section-separator{border-bottom:1px solid var(--resume-accent,#377bb5);height:0;margin:4px 0 5px;break-after:avoid}
+.position-heading{display:grid;grid-template-columns:max-content minmax(max-content,1fr) max-content;gap:10px;align-items:baseline}
+.position-heading>dt,.position-heading>dd{white-space:nowrap;margin:0}
+.position-heading>dd:nth-child(2){text-align:center}
+.position-heading>dd:last-child{text-align:right}
+.contact-details>dt,.contact-details>dd,.contact-details a{white-space:nowrap;overflow-wrap:normal}

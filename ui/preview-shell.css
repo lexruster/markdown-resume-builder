@@ -1,0 +1,11 @@
+@media screen{
+  body{background:transparent}
+  .pagedjs_pages{display:flex;flex-direction:column;align-items:center;gap:24px;padding:12px 20px 35px;zoom:var(--preview-zoom,1)}
+  .pagedjs_page{background:white;box-shadow:0 3px 15px #23323b18;flex-shrink:0}
+}
+@media print{
+  html,body{background:white!important;margin:0!important}
+  .pagedjs_pages{display:block;padding:0!important;zoom:1!important}
+  .pagedjs_page{margin:0!important;box-shadow:none!important;break-after:page}
+  .pagedjs_page:last-child{break-after:auto}
+}
